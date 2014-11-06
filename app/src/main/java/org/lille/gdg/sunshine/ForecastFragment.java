@@ -1,5 +1,6 @@
 package org.lille.gdg.sunshine;
 
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -14,6 +15,8 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
+import org.json.JSONException;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,12 +24,15 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * A placeholder fragment containing a simple view.
  */
 public class ForecastFragment extends Fragment {
+
+    private ArrayAdapter<String> forecatAdapter;
 
     public ForecastFragment(){
 
@@ -46,7 +52,7 @@ public class ForecastFragment extends Fragment {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (R.id.action_refresh == item.getItemId()){
-            new FetchWeatherTask().execute();
+            new FetchWeatherTask().execute("Lille, fr");
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -56,40 +62,26 @@ public class ForecastFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-
-        List<String> fakeContent = new ArrayList<String>();
-        fakeContent.add("foo");
-        fakeContent.add("zlfkzlj");
-        fakeContent.add("tonton");
-        fakeContent.add("tata");
-        fakeContent.add("tata");
-        fakeContent.add("tata");
-        fakeContent.add("tata");
-        fakeContent.add("tata");
-        fakeContent.add("tata");
-        fakeContent.add("tata");
-        fakeContent.add("tata");
-        fakeContent.add("tata");
-        fakeContent.add("tata");
-        fakeContent.add("tata");
-        fakeContent.add("tata");
-        fakeContent.add("tata");
-        fakeContent.add("tutu");
-        fakeContent.add("toto");
-        fakeContent.add("bar");
-
-        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(getActivity(), R.layout.list_item_forecat, R.id.list_item_forecast_textview, fakeContent);
-        ((ListView) rootView.findViewById(R.id.listview_forecast)).setAdapter(arrayAdapter);
+        forecatAdapter = new ArrayAdapter<String>(getActivity(), R.layout.list_item_forecat, R.id.list_item_forecast_textview);
+        ((ListView) rootView.findViewById(R.id.listview_forecast)).setAdapter(forecatAdapter);
 
         return rootView;
     }
 
-    private class FetchWeatherTask extends AsyncTask<Void, Void, Void>{
+    private class FetchWeatherTask extends AsyncTask<String, Void, String[]>{
 
         private String LOG_TAG = FetchWeatherTask.class.getSimpleName();
 
         @Override
-        protected Void doInBackground(Void... params) {
+        protected void onPostExecute(String[] strings) {
+            if (strings != null) {
+                forecatAdapter.clear();
+                forecatAdapter.addAll(new ArrayList<String>(Arrays.asList(strings)));
+            }
+        }
+
+        @Override
+        protected String[] doInBackground(String... params) {
             // These two need to be declared outside the try/catch
             // so that they can be closed in the finally block.
             HttpURLConnection urlConnection = null;
@@ -97,12 +89,28 @@ public class ForecastFragment extends Fragment {
 
             // Will contain the raw JSON response as a string.
             String forecastJsonStr = null;
+            String[] result = null;
+            final Integer numDays = 7;
 
             try {
                 // Construct the URL for the OpenWeatherMap query
                 // Possible parameters are available at OWM's forecast API page, at
                 // http://openweathermap.org/API#forecast
-                URL url = new URL("http://api.openweathermap.org/data/2.5/forecast/daily?q=94043&mode=json&units=metric&cnt=7");
+                final String BASE_URL = "http://api.openweathermap.org/data/2.5/forecast/daily?";
+                final String QUERY = "q";
+                final String FORMAT = "mode";
+                final String UNITS_PARAM = "units";
+                final String DAYS = "cnt";
+
+                Uri builtUri = Uri.parse(BASE_URL).buildUpon()
+                        .appendQueryParameter(QUERY, params[0])
+                        .appendQueryParameter(FORMAT, "json")
+                        .appendQueryParameter(UNITS_PARAM, "metric")
+                        .appendQueryParameter(DAYS, numDays.toString())
+                        .build();
+                URL url = new URL(builtUri.toString());
+
+                Log.v(LOG_TAG, "Built URI " + builtUri.toString());
 
                 // Create the request to OpenWeatherMap, and open the connection
                 urlConnection = (HttpURLConnection) url.openConnection();
@@ -132,11 +140,17 @@ public class ForecastFragment extends Fragment {
                 }
                 forecastJsonStr = buffer.toString();
                 Log.v(LOG_TAG, forecastJsonStr);
+
+                result = new WeatherDataParser().getWeatherDataFromJson(forecastJsonStr, numDays);
+                Log.v(LOG_TAG, result[0]);
             } catch (IOException e) {
                 Log.e(LOG_TAG, "Error ", e);
                 // If the code didn't successfully get the weather data, there's no point in attempting
                 // to parse it.
-                forecastJsonStr = null;
+                result = null;
+            } catch (JSONException e) {
+                Log.e(LOG_TAG, "Error ", e);
+                result = null;
             } finally {
                 if (urlConnection != null) {
                     urlConnection.disconnect();
@@ -149,7 +163,8 @@ public class ForecastFragment extends Fragment {
                     }
                 }
             }
-            return null;
+
+            return result;
         }
     }
 }
