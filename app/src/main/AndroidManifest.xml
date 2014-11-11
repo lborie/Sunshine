@@ -8,7 +8,7 @@
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/Theme.AppCompat.Light" >
+        android:theme="@style/Theme.AppCompat" >
         <activity
             android:name="org.lille.gdg.sunshine.MainActivity"
             android:label="@string/app_name" >
@@ -21,6 +21,14 @@
         <activity
             android:name="org.lille.gdg.sunshine.DetailActivity"
             android:label="@string/title_activity_detail"
+            android:parentActivityName="org.lille.gdg.sunshine.MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="org.lille.gdg.sunshine.MainActivity" />
+        </activity>
+        <activity
+            android:name="org.lille.gdg.sunshine.SettingsActivity"
+            android:label="@string/title_activity_settings"
             android:parentActivityName="org.lille.gdg.sunshine.MainActivity" >
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
