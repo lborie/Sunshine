@@ -4,9 +4,9 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.util.Log;
-import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -16,7 +16,6 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.Toast;
 
 import org.json.JSONException;
 
@@ -28,7 +27,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -37,7 +35,7 @@ public class ForecastFragment extends Fragment {
 
     private ArrayAdapter<String> forecatAdapter;
 
-    public ForecastFragment(){
+    public ForecastFragment() {
 
     }
 
@@ -54,11 +52,17 @@ public class ForecastFragment extends Fragment {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (R.id.action_refresh == item.getItemId()){
-            new FetchWeatherTask().execute("Lille, fr");
+        if (R.id.action_refresh == item.getItemId()) {
+            updateWeather();
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        updateWeather();
     }
 
     @Override
@@ -79,7 +83,12 @@ public class ForecastFragment extends Fragment {
         return rootView;
     }
 
-    private class FetchWeatherTask extends AsyncTask<String, Void, String[]>{
+    private void updateWeather() {
+        String query = PreferenceManager.getDefaultSharedPreferences(this.getActivity()).getString(getString(R.string.pref_location_key), getString(R.string.pref_location_default));
+        new FetchWeatherTask().execute(query);
+    }
+
+    private class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
 
         private String LOG_TAG = FetchWeatherTask.class.getSimpleName();
 
