@@ -37,6 +37,9 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="org.lille.gdg.sunshine.MainActivity" />
         </activity>
+        <provider
+            android:authorities="org.lille.gdg.sunshine"
+            android:name=".data.WeatherProvider" />
     </application>
 
 </manifest>
