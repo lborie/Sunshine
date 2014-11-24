@@ -5,6 +5,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.preference.PreferenceManager;
@@ -33,6 +34,7 @@ import static org.lille.gdg.sunshine.data.WeatherContract.WeatherEntry;
 public class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
 
     private final String LOG_TAG = FetchWeatherTask.class.getSimpleName();
+    private boolean DEBUG = true;
 
     private ArrayAdapter<String> mForecastAdapter;
     private final Context mContext;
@@ -240,6 +242,36 @@ public class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
             String highAndLow = formatHighLows(high, low);
             String day = getReadableDateString(dateTime);
             resultStrs[i] = day + " - " + description + " - " + highAndLow;
+        }
+        if (cVVector.size() > 0) {
+            ContentValues[] cvArray = new ContentValues[cVVector.size()];
+            cVVector.toArray(cvArray);
+            int rowsInserted = mContext.getContentResolver()
+                    .bulkInsert(WeatherEntry.CONTENT_URI, cvArray);
+            Log.v(LOG_TAG, "inserted " + rowsInserted + " rows of weather data");
+            // Use a DEBUG variable to gate whether or not you do this, so you can easily
+            // turn it on and off, and so that it's easy to see what you can rip out if
+            // you ever want to remove it.
+            if (DEBUG) {
+                Cursor weatherCursor = mContext.getContentResolver().query(
+                        WeatherEntry.CONTENT_URI,
+                        null,
+                        null,
+                        null,
+                        null
+                );
+
+                if (weatherCursor.moveToFirst()) {
+                    ContentValues resultValues = new ContentValues();
+                    DatabaseUtils.cursorRowToContentValues(weatherCursor, resultValues);
+                    Log.v(LOG_TAG, "Query succeeded! **********");
+                    for (String key : resultValues.keySet()) {
+                        Log.v(LOG_TAG, key + ": " + resultValues.getAsString(key));
+                    }
+                } else {
+                    Log.v(LOG_TAG, "Query failed! :( **********");
+                }
+            }
         }
         return resultStrs;
     }
